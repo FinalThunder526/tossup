@@ -1,0 +1,18 @@
+09:56:42 **** Incremental Build of configuration Default for project Morpheus575 ****
+make all 
+make[1]: Nothing to be done for `all'.
+LN ./bin/auto.o ./bin/help.o ./bin/init.o ./bin/opcontrol.o ./firmware/libccos.a -lgcc -lm to bin/output.elf
+./bin/help.o: In function `cubicMap':
+help.c:(.text.cubicMap+0x0): multiple definition of `cubicMap'
+./bin/auto.o:auto.c:(.text.cubicMap+0x0): first defined here
+./bin/init.o: In function `cubicMap':
+init.c:(.text.cubicMap+0x0): multiple definition of `cubicMap'
+./bin/auto.o:auto.c:(.text.cubicMap+0x0): first defined here
+./bin/opcontrol.o: In function `cubicMap':
+opcontrol.c:(.text.cubicMap+0x0): multiple definition of `cubicMap'
+./bin/auto.o:auto.c:(.text.cubicMap+0x0): first defined here
+collect2.exe: error: ld returned 1 exit status
+make: *** [bin/output.elf] Error 1
+
+09:56:42 Build Finished (took 366ms)
+

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Delete resource &apos;Morpheus/src/help&apos;" deleteContents="false" description="Delete resource &apos;Morpheus/src/help&apos;" element1="/Morpheus/src/help" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1382979719786"/>&#x0A;<refactoring comment="Delete resource &apos;Morpheus/include/help.h&apos;" deleteContents="false" description="Delete resource &apos;Morpheus/include/help.h&apos;" element1="/Morpheus/include/help.h" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1382988654070"/>
+</session>
