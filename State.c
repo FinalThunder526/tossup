@@ -1,18 +1,21 @@
-#pragma config(I2C_Usage, I2C1, i2cSensors)
 #pragma config(Sensor, in1,    ArmPotentiometer, sensorPotentiometer)
 #pragma config(Sensor, in2,    Gyro,           sensorGyro)
-#pragma config(Sensor, in3,    LeftLine,       sensorLineFollower)
-#pragma config(Sensor, in5,    RightLine,      sensorLineFollower)
-#pragma config(Sensor, dgtl1,  Morpheus,       sensorDigitalOut)
-#pragma config(Sensor, dgtl2,  Catapult,       sensorDigitalOut)
-#pragma config(Sensor, dgtl12, Button,         sensorTouch)
-#pragma config(Sensor, I2C_1,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
-#pragma config(Sensor, I2C_2,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
+#pragma config(Sensor, in3,    AutonPotentiometer, sensorPotentiometer)
+#pragma config(Sensor, dgtl2,  MorpheusL,      sensorDigitalOut)
+#pragma config(Sensor, dgtl3,  MorpheusR,      sensorDigitalOut)
+#pragma config(Sensor, dgtl4,  HangingL,       sensorDigitalOut)
+#pragma config(Sensor, dgtl5,  HangingR,       sensorDigitalOut)
+#pragma config(Sensor, dgtl6,  HangLock,       sensorDigitalOut)
+#pragma config(Sensor, dgtl8,  Catapult,       sensorDigitalOut)
+#pragma config(Sensor, dgtl9,  AutonButton,    sensorTouch)
+#pragma config(Sensor, dgtl10, RedLED,         sensorLEDtoVCC)
+#pragma config(Sensor, dgtl11, YellowLED,      sensorLEDtoVCC)
+#pragma config(Sensor, dgtl12, GreenLED,       sensorLEDtoVCC)
 #pragma config(Motor,  port1,           IntakeLeft,    tmotorVex393, openLoop, reversed)
 #pragma config(Motor,  port2,           DriveFrontLeft, tmotorVex393, openLoop)
 #pragma config(Motor,  port3,           DriveFrontRight, tmotorVex393, openLoop, reversed)
-#pragma config(Motor,  port4,           DriveBackLeft, tmotorVex393, PIDControl)
-#pragma config(Motor,  port5,           DriveBackRight, tmotorVex393, PIDControl, reversed)
+#pragma config(Motor,  port4,           DriveBackLeft, tmotorVex393, openLoop)
+#pragma config(Motor,  port5,           DriveBackRight, tmotorVex393, openLoop, reversed)
 #pragma config(Motor,  port6,           ArmLeftOut,    tmotorVex393, openLoop, reversed)
 #pragma config(Motor,  port7,           ArmLeftIn,     tmotorVex393, openLoop)
 #pragma config(Motor,  port8,           ArmRightIn,    tmotorVex393, openLoop, reversed)
@@ -296,7 +299,7 @@ void lowerArm(int target) {
 }
 
 void waitForButton() {
-	while(SensorValue[Button] == 0) {
+	while(SensorValue[AutonButton] == 0) {
 		wait1Msec(10);
 	}
 }
@@ -516,11 +519,11 @@ task Display_LCD(){
     	else
     	{
     		// Default screen:
-    		string left = SensorValue[LeftLine];
-    		string right = SensorValue[RightLine];
+    		//string left = SensorValue[LeftLine];
+    		//string right = SensorValue[RightLine];
     		string arm = armRotation;
     		string lolbeav = isBeingIntaken;
-    		displayLCDCenteredString(0, left);
+    		displayLCDCenteredString(0, "lol");
     	  displayLCDCenteredString(1, lolbeav);
     	}
     }
