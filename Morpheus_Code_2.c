@@ -119,7 +119,6 @@ void setTank() {
 	morpheus = 0;
 	SensorValue[RightMorpheus] = morpheus;
 	SensorValue[LeftMorpheus] = morpheus;
-
 }
 
 // controls movement of the robot

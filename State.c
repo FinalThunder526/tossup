@@ -68,6 +68,8 @@
 #define armSpeed 110
 #define armMin 1260
 #define armMax 2860
+#define armBars 2430
+#define armBump 1700
 //#define armScore 2800
 
 // Auton stuff
@@ -110,8 +112,8 @@ task armMovement();
 ////////////////////
 // HELPER METHODS //
 ////////////////////
-void setMorpheus() { SensorValue[MorpheusL] = SensorValue[MorpheusR] = 1; }
-void setTank() { SensorValue[MorpheusL] = SensorValue[MorpheusR] = 0; }
+void setMorpheus() { morpheus = 1; SensorValue[MorpheusL] = SensorValue[MorpheusR] = morpheus; }
+void setTank() { morpheus = 0; SensorValue[MorpheusL] = SensorValue[MorpheusR] = morpheus; }
 
 /////////////////
 //// SENSORS ////
@@ -128,7 +130,7 @@ void updateSensors() {
 // - Gyro
 void resetSensors() {
 	nMotorEncoder[DriveBackLeft] = nMotorEncoder[DriveBackRight] = 0;
-	SensorValue[Gyroscope] = 0;
+	gyroValue = SensorValue[Gyroscope] = 0;
 }
 
 void waitForButton() {
@@ -239,7 +241,7 @@ void UC_arm() {
 	else if (vexRT[Btn5U] == 1)
 	  moveArm(127);
 	else if (vexRT[Btn5D] == 1)
-	  moveArm(-127);
+	  moveArm(-107);
 	else
 		moveArm(0);
 }
@@ -250,12 +252,15 @@ void raiseArm(int target) {
 		powerArm(armSpeed);
 		updateSensors();
 	}
+	powerArm(0);
+	holdArm();
 }
 void lowerArm(int target) {
 	while(armRotation > target) {
 		powerArm(-armSpeed);
 		updateSensors();
 	}
+	powerArm(0);
 }
 
 void holdArm() {
@@ -283,8 +288,8 @@ task armMovement() {
 void forward(int distance) {
 	resetSensors();
 	while(nMotorEncoder[DriveBackLeft] < distance) {
-		motor[DriveBackLeft] = motor[DriveBackRight] = 100;
-		motor[DriveFrontLeft] = motor[DriveFrontRight] = 100;
+		motor[DriveBackLeft] = motor[DriveBackRight] = MAX_POWER;
+		motor[DriveFrontLeft] = motor[DriveFrontRight] = MAX_POWER;
 	}
 	motor[DriveBackLeft] = motor[DriveBackRight] = 0;
 	motor[DriveFrontLeft] = motor[DriveFrontRight] = 0;
@@ -293,27 +298,27 @@ void forward(int distance) {
 void back(int distance) {
 	resetSensors();
 	while(nMotorEncoder[DriveBackLeft] > -distance) {
-		motor[DriveBackLeft] = motor[DriveBackRight] = -100;
-		motor[DriveFrontLeft] = motor[DriveFrontRight] = -100;
+		motor[DriveBackLeft] = motor[DriveBackRight] = -MAX_POWER;
+		motor[DriveFrontLeft] = motor[DriveFrontRight] = -MAX_POWER;
 	}
 	motor[DriveBackLeft] = motor[DriveBackRight] = 0;
 	motor[DriveFrontLeft] = motor[DriveFrontRight] = 0;
 }
 
-void left() {
+void left(float angle) {
 	resetSensors();
 	motor[DriveBackLeft] = motor[DriveFrontLeft] = -100;
 	motor[DriveBackRight] = motor[DriveFrontRight] = 100;
-	while((SensorValue[Gyroscope]) < 870) {
+	while((SensorValue[Gyroscope]) < (angle * 10)) {
 	}
 	move(0, 0, 0);
 }
 
-void right() {
+void right(float angle) {
 	resetSensors();
 	motor[DriveBackLeft] = motor[DriveFrontLeft] = 100;
 	motor[DriveBackRight] = motor[DriveFrontRight] = -100;
-	while((SensorValue[Gyroscope]) > -870) {
+	while((SensorValue[Gyroscope]) > (-angle * 10)) {
 	}
 	move(0, 0, 0);
 }
@@ -328,8 +333,8 @@ int targetDist = 2100;
 
 int error;
 
-int rampDown = 500;
-int rampUp = 600;
+float rampDown = .25;
+float rampUp = .4;
 int output, input;
 int rampDownBasePower = 25;
 int rampUpBasePower = 70;
@@ -342,10 +347,10 @@ bool isPID = true;
 
 // Straight-line equation for ramping down, with basePower being the lowest it goes before hitting 0.
 float getOutputByRampDown() {
-	return (MAX_POWER - rampDownBasePower)/rampDown * output + (error)/(abs(error)) * rampDownBasePower;
+	return (MAX_POWER - rampDownBasePower)/(rampDown * targetDist) * output + (error)/(abs(error)) * rampDownBasePower;
 }
 float getOutputByRampUp() {
-	return (MAX_POWER - rampUpBasePower)/rampUp * input + (error)/(abs(error)) * rampUpBasePower;
+	return (MAX_POWER - rampUpBasePower)/(rampUp * targetDist) * input + (error)/(abs(error)) * rampUpBasePower;
 }
 
 // Basic PID
@@ -367,6 +372,27 @@ task PID() {
 			if(isForwardMotion == (error < 0))
 			{ isPID = false;
 				movementN ++; }
+		}
+	}
+}
+
+bool isMoving = false;
+float straightOffset = 0.91;
+
+// Negative is to the right
+task straight() {
+	while(true) {
+		if(isMoving) {
+			updateSensors();
+			if(SensorValue[Gyroscope] < 100 && SensorValue[Gyroscope]  > 0) {
+				// Left
+				motor[DriveBackLeft] = motor[DriveFrontLeft] = MAX_POWER * straightOffset;
+			} else if (SensorValue[Gyroscope]  > -100 && SensorValue[Gyroscope] < 0) {
+				// Right
+				motor[DriveBackRight] = motor[DriveFrontRight] = MAX_POWER * straightOffset;
+			} else {
+				powerDrive(MAX_POWER);
+			}
 		}
 	}
 }
@@ -398,16 +424,7 @@ task checkArmMovement() {
 // AUTONOMOUS METHODS //
 ////////////////////////
 
-void auton0() {
-	for(int i = 0; i < 4; i++) {
-		forward(500);
-		wait1Msec(500);
-		right();
-		wait1Msec(500);
-	}
-}
-
-void auton1() {
+void autonBlueButton() {
 	setIntake(-1);
 	wait1Msec(200);
 	raiseArm(2430);
@@ -428,32 +445,129 @@ void auton1() {
 	stopEverything();
 }
 
-void auton2() {
+void autonBlueStash() {
 	forward(2540);
 	raiseArm(armMax);
 	holdArm();
 	forward(340);
 	setIntake(-1);
-	wait1Msec(1500);
+	wait1Msec(450);
 	back(300);
-	lowerArm(armMin);
+	lowerArm(armMin + 100);
+	stopArm();
+	back(2300);
+	stopEverything();
+	resetSensors();
+	waitForButton();
+	stopArm();
+	resetSensors();
+	autonBlueButton();
+}
+
+void autonBlueNoButton() {
+	setIntake(-1);
+	wait1Msec(200);
+	raiseArm(2430);
+	holdArm();
+	forward(670);
+	stopMoving();
+	wait1Msec(200);
+	back(690);
+	stopMoving();
+	wait1Msec(300);
+	left(45);
+	wait1Msec(400);
+	forward(1400);
+	move(0, 40, 0);
+	move(0, -40, 0);
+	move(0, 0, 0);
+	wait1Msec(1000);
+	back(1420);
+	stopEverything();
+}
+
+void autonRedNoButton() {
+	setIntake(-1);
+	wait1Msec(200);
+	raiseArm(2430);
+	holdArm();
+	forward(670);
+	stopMoving();
+	wait1Msec(200);
+	back(690);
+	stopMoving();
+	wait1Msec(300);
+	right(45);
+	wait1Msec(400);
+	forward(1400);
+	move(0, 40, 0);
+	move(0, -40, 0);
+	move(0, 0, 0);
+	wait1Msec(1000);
+	back(1420);
+	stopEverything();
+}
+
+void autonBlueGoal() {
+	setIntake(1);
+	forward(470);
+	wait1Msec(1200);
+	back(480);
+	wait1Msec(120);
+	setIntake(0);
+	right(175);
+	raiseArm(armBump);
+	powerArm(40);
+	forward(1200);
+	setIntake(-1);
+	wait1Msec(2000);
+}
+
+void autonBlueDoubleStash() {
+	startTask(PID);
+	isPID = true;
+	targetDist = 2000;
+	while(isPID) {}
+	stopMoving();
+	left(30);
+	raiseArm(armMax);
+	holdArm();
+	forward(300);
+	wait1Msec(250);
+	setIntake(-1);
+	wait1Msec(200);
+	back(100);
+	wait1Msec(150);
+	back(200);
+}
+
+void startAuton() {
+	// User-defined code
+  intakeT(1, 1500);
+	resetSensors();
 }
 
 void autonomousMethod()
 {
-	pre_auton();
+	startAuton();
 	setTank();
 	wait1Msec(1000);
 
-	startTask(checkArmMovement);
-	startTask(PID);
+	//startTask(checkArmMovement);
+	//startTask(PID);
 
-	/*
-	if(autonRotation < 2048) {
-		auton1();
+	//int autonThresholds =
+
+	if(autonRotation < 1065) {
+		autonBlueButton();
+	} else if (autonRotation < 2075) {
+		autonBlueStash();
+	} else if (autonRotation < 3085) {
+		autonBlueNoButton();
 	} else {
-		auton2();
-	}*/
+		//autonRedNoButton();
+		autonBlueGoal();
+	}
 }
 
 ///////////
@@ -461,8 +575,8 @@ void autonomousMethod()
 ///////////
 void mainDisplay() {
 	string s;
-	s = rampDownBasePower;
-  displayLCDCenteredString(0, "rampDownBasePower");
+	s = SensorValue[AutonPotentiometer];
+  displayLCDCenteredString(0, "Auton Value");
   displayLCDCenteredString(1, s);
 }
 
@@ -554,9 +668,6 @@ void UC_buttons() {
 void pre_auton()
 {
   bStopTasksBetweenModes = true;
-  // User-defined code
-  intakeT(1, 1500);
-	resetSensors();
 }
 
 task autonomous()
